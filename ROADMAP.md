@@ -53,6 +53,18 @@ Verified end-to-end on the real 260K model (10.91 tok/s on GTX 1650 via CuPy).
 
 Remaining stretch goals: quantised KV cache (Q8_0), larger-model stress test.
 
+## Phase 6 — 4GB VRAM benchmark harness (done ✅)
+
+`scripts/benchmark_vram.py`: benchmarks tokens/sec across model sizes on the
+GTX 1650 (4GB VRAM), NumPy (CPU) vs CuPy (CUDA), on real GGUF tensors.
+
+`bench/results.json`: 260K model — CPU 346.5 tok/s, CuPy 26.6 tok/s.
+`bench/results_15m.json`: 15M model — CPU 5.4 tok/s, CuPy 4.2 tok/s.
+
+Honest finding: on sub-20M parameter models, CPU wins (GPU launch overhead
+dominates). The CuPy backend is functionally identical to NumPy (verified by
+`test_cuda_model.py`); the GPU advantage appears on larger, memory-bound models.
+
 ## Non-goals
 
 - Training / backpropagation. This is inference only.
