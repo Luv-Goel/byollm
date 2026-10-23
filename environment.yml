@@ -1,0 +1,11 @@
+name: byollm
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - numpy
+  - pytest
+  - pip
+  - pip:
+    - huggingface_hub
