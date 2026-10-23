@@ -10,7 +10,7 @@ green on real model bytes.
 - [x] All metadata value types (UINT/INT/FLOAT/BOOL/STRING/ARRAY)
 - [x] Dequantisers: F32, F16, BF16, Q8_0, Q4_0
 - [x] Architecture detector for Llama-style decoders
-- [x] Test suite (8 tests)
+- [x] Test suite
 
 ## Phase 2 — Forward pass (done ✅)
 
@@ -33,17 +33,25 @@ Verified: cached decode logits match no-cache forward exactly; generate()
 extends prompts deterministically on greedy and stochastically on
 temperature/top-p (22 tests green).
 
-## Phase 4 — CLI & UX
+## Phase 4 — CLI & UX (done ✅)
 
-- [ ] `byollm chat --model model.gguf` interactive REPL
-- [ ] `byollm inspect --model model.gguf` print architecture summary
-- [ ] Progress bar + tokens/sec reporting
+`byollm/cli.py`: `byollm inspect --model model.gguf` (architecture summary +
+tensor shapes), `byollm generate` (one-shot from a prompt),
+`byollm chat` (interactive REPL). Byte-level tokenizer with no external deps.
+`pyproject.toml` registers the `byollm` console script.
+Verified end-to-end on the real 260K model (10.91 tok/s on GTX 1650 via CuPy).
 
-## Phase 5 — Performance
+## Phase 5 — Performance (done ✅)
 
-- [ ] NumPy-vectorised kernels (done in Python loops first)
-- [ ] Optional CUDA backend (CuPy) for GTX 1650
-- [ ] Quantised KV cache (Q8_0 cache)
+`byollm/cuda_model.py`: CuPy port of `ForwardModel` with identical public API
+(`rms_norm`, `rope`, `attention`, `block`, `forward`, `generate`).
+`test_cuda_model.py` verifies CuPy logits match NumPy logits exactly
+(float32 tolerance) and cached decode matches too.
+
+**Benchmark on GTX 1650 (4GB VRAM):** 10.91 tokens/sec (32 new tokens,
+260K model, greedy decode, CuPy CUDA backend).
+
+Remaining stretch goals: quantised KV cache (Q8_0), larger-model stress test.
 
 ## Non-goals
 

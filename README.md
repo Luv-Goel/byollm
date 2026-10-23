@@ -26,15 +26,16 @@ not a binding — a real, running engine you can extend.
 ## What works right now
 
 | Milestone | Status | What it does |
-|---|---:|---|
+|---|---|---|
 | GGUF container parser | ✅ | Reads GGUF v1/v2/v3: header, metadata, tensor table; lazy on-disk tensor access |
 | Metadata types | ✅ | UINT/INT/FLOAT/BOOL/STRING/ARRAY all round-trip |
 | Dequantisers | ✅ | F32, F16, BF16, Q8_0, Q4_0 (exact llama.cpp rules) |
 | Architecture detector | ✅ | Reads hyperparameters from file metadata (block count, heads, FFN dim, RoPE, …) |
-| Test suite | ✅ | 8 tests, run against synthetic GGUF files and a real 260K-parameter model |
-| Forward pass | 🚧 | Attention + MLP — in progress (see `ROADMAP.md`) |
-| Sampling / KV cache | 🚧 | Greedy, temperature, top-p — next |
-| CLI | 📅 | `byollm chat --model model.gguf` |
+| Test suite | ✅ | 27 tests, run against synthetic GGUF files and real 260K / 15M models |
+| Forward pass | ✅ | RoPE, RMSNorm, causal masked attention, GQA, SwiGLU MLP, residual stream, LM head — finite logits on real tensors |
+| Sampling / KV cache | ✅ | Greedy, temperature, top-p nucleus; per-layer KV cache; cached decode matches no-cache forward exactly |
+| CLI | ✅ | `byollm inspect` / `byollm generate` / `byollm chat` | `pyproject.toml` console script |
+| CUDA backend | ✅ | `byollm/cuda_model.py` — CuPy port with identical API; 10.91 tokens/sec on GTX 1650 (4GB VRAM) |
 
 ## Quick start
 
@@ -113,9 +114,15 @@ layers mapped: 5 / 5
 byollm/          # the engine package
   gguf.py        # GGUF v1/v2/v3 container parser + dequantisers
   arch.py        # architecture detection + tensor-name → layer mapping
+  model.py       # NumPy forward pass (RoPE, RMSNorm, attention, MLP, KV cache, samplers)
+  cuda_model.py  # CuPy CUDA port (identical API, runs on GTX 1650)
+  cli.py         # `byollm inspect` / `generate` / `chat`
   __init__.py    # package entry point
 tests/           # test suite (pytest)
   test_gguf.py   # parser + architecture tests (synthetic + real GGUF)
+  test_forward.py  # forward-pass tests on synthetic + real models
+  test_cache_generation.py  # KV cache equivalence + generation tests
+  test_cuda_model.py  # CuPy matches NumPy, benchmark tokens/sec
 docs/            # design notes, roadmap, chapter write-ups
 scripts/         # small helpers (model downloader, benchmarks)
 models/          # your GGUF models go here (gitignored — large binaries)
