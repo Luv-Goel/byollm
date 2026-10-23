@@ -93,6 +93,46 @@ rms epsilon  : 1e-05
 layers mapped: 5 / 5
 ```
 
+## Live demo (runs on a GTX 1650, 4GB VRAM)
+
+```bash
+# inspect a real GGUF model
+byollm inspect --model models/tiny.gguf
+
+# generate from a prompt
+byollm generate --model models/tiny.gguf --prompt "hello" --max-new 32
+```
+
+Example `inspect` output against the real 260K-parameter Llama model:
+
+```
+architecture : llama
+blocks       : 5
+embedding    : 64
+ffn hidden   : 172
+heads        : 8 (KV: 4)
+head dim     : 8
+context      : 512
+vocab        : 512
+rms epsilon  : 1e-05
+layers mapped: 5 / 5
+```
+
+Forward pass produces finite logits end-to-end:
+
+```
+logits shape: (3, 512)
+last-position top-5: [35, 99, 163, 87, 65]
+last-position logits: [-4.4695, 12.238, 5.7171, 7.7305, -4.0374, 4.5493, -1.2805, 0.8199]
+finite: True
+```
+
+CUDA backend (CuPy) benchmark on the same model:
+
+```
+CuPy tokens/sec (GTX 1650): 10.91  (32 new tokens in 2.93s)
+```
+
 ## Design principles
 
 1. **The file is the source of truth.** Nothing about layer counts, head
