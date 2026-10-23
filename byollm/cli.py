@@ -62,6 +62,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
         strategy=args.strategy,
         temperature=args.temperature,
         top_p=args.top_p,
+        top_k=args.top_k,
     )
     text = decode(out)
     print(text)
@@ -93,6 +94,7 @@ def cmd_chat(args: argparse.Namespace) -> int:
             strategy=args.strategy,
             temperature=args.temperature,
             top_p=args.top_p,
+            top_k=args.top_k,
         )
         # print only the newly generated part
         new = decode(out[len(ids):])
@@ -117,19 +119,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_gen.add_argument("--model", required=True, help="path to a .gguf file")
     p_gen.add_argument("--prompt", required=True, help="text prompt")
     p_gen.add_argument("--max-new", type=int, default=32)
-    p_gen.add_argument("--strategy", choices=["greedy", "temperature", "top_p"],
+    p_gen.add_argument("--strategy", choices=["greedy", "temperature", "top_p", "top_k"],
                        default="greedy")
     p_gen.add_argument("--temperature", type=float, default=1.0)
     p_gen.add_argument("--top-p", type=float, default=None)
+    p_gen.add_argument("--top-k", type=int, default=None)
     p_gen.set_defaults(func=cmd_generate)
 
     p_chat = sub.add_parser("chat", help="interactive chat REPL")
     p_chat.add_argument("--model", required=True, help="path to a .gguf file")
     p_chat.add_argument("--max-new", type=int, default=32)
-    p_chat.add_argument("--strategy", choices=["greedy", "temperature", "top_p"],
+    p_chat.add_argument("--strategy", choices=["greedy", "temperature", "top_p", "top_k"],
                         default="greedy")
     p_chat.add_argument("--temperature", type=float, default=1.0)
     p_chat.add_argument("--top-p", type=float, default=None)
+    p_chat.add_argument("--top-k", type=int, default=None)
     p_chat.set_defaults(func=cmd_chat)
 
     return p

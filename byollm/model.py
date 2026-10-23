@@ -235,12 +235,23 @@ def top_p_mask(probs: np.ndarray, p: float) -> np.ndarray:
     return keep
 
 
+def top_k_mask(probs: np.ndarray, k: int) -> np.ndarray:
+    """Zero out all but the top-``k`` most probable tokens."""
+    k = min(k, len(probs))
+    keep = np.zeros_like(probs, dtype=bool)
+    top_idx = np.argpartition(probs, -k)[-k:]
+    keep[top_idx] = True
+    return keep
+
+
 def sample_next(logits: np.ndarray, strategy: str = "greedy",
                 temperature: float = 1.0, top_p: float | None = None,
+                top_k: int | None = None,
                 rng: np.random.Generator | None = None) -> int:
     """Sample the next token id from logits.
 
-    Strategies: ``greedy`` (argmax), ``temperature``, ``top_p`` (nucleus).
+    Strategies: ``greedy`` (argmax), ``temperature``, ``top_p`` (nucleus),
+    ``top_k``.
     """
     if rng is None:
         rng = np.random.default_rng(0)
@@ -263,12 +274,20 @@ def sample_next(logits: np.ndarray, strategy: str = "greedy",
         masked = masked / masked.sum()
         return int(rng.choice(len(probs), p=masked))
 
+    if strategy == "top_k":
+        if top_k is None:
+            top_k = 10
+        keep = top_k_mask(probs, top_k)
+        masked = probs * keep
+        masked = masked / masked.sum()
+        return int(rng.choice(len(probs), p=masked))
+
     raise ValueError(f"unknown sampling strategy {strategy!r}")
 
 
 def generate(self: "ForwardModel", token_ids: list[int], max_new: int = 32,
              strategy: str = "greedy", temperature: float = 1.0,
-             top_p: float | None = None) -> list[int]:
+             top_p: float | None = None, top_k: int | None = None) -> list[int]:
     """Autoregressively generate ``max_new`` tokens using a KV cache.
 
     Returns the full token list (prompt + generated).
@@ -287,7 +306,7 @@ def generate(self: "ForwardModel", token_ids: list[int], max_new: int = 32,
     tokens = list(token_ids)
     next_logits = logits[-1]  # logits at the last prompt position
     for _ in range(max_new):
-        nxt = sample_next(next_logits, strategy, temperature, top_p, rng)
+        nxt = sample_next(next_logits, strategy, temperature, top_p, top_k, rng)
         tokens.append(nxt)
         # decode only the newly sampled token at its position
         next_logits = self.forward([nxt],
