@@ -24,11 +24,14 @@ returns logits. Verified on synthetic fixtures and the real 260K / 15M models
 transpose (`x @ W`); causal mask is `triu(..., k=1)` (0 on diagonal+lower,
 `-inf` strictly above); sequence is the leading axis in RoPE.
 
-## Phase 3 — Generation
+## Phase 3 — Generation (done ✅)
 
-- [ ] KV cache
-- [ ] Samplers: greedy, temperature, top-p, top-k
-- [ ] `generate()` loop: tokens → text
+`byollm/model.py`: KV cache (per-layer K/V tensors, decode without recompute),
+samplers (greedy / temperature / top-p nucleus), and `ForwardModel.generate()`
+for full autoregressive generation. `generate_next()` kept for single-step use.
+Verified: cached decode logits match no-cache forward exactly; generate()
+extends prompts deterministically on greedy and stochastically on
+temperature/top-p (22 tests green).
 
 ## Phase 4 — CLI & UX
 
