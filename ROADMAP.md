@@ -12,13 +12,17 @@ green on real model bytes.
 - [x] Architecture detector for Llama-style decoders
 - [x] Test suite (8 tests)
 
-## Phase 2 — Forward pass (in progress 🚧)
+## Phase 2 — Forward pass (done ✅)
 
-- [ ] RoPE rotary embeddings
-- [ ] Multi-head + grouped-query attention
-- [ ] RMSNorm
-- [ ] SwiGLU / GeGLU MLP
-- [ ] Full transformer block forward pass
+`byollm/model.py`: RoPE rotary embeddings, RMSNorm, causal masked attention,
+GQA head expansion, SwiGLU MLP, residual stream, final norm + LM head.
+`ForwardModel.forward(tokens)` runs the full stack on real GGUF tensors and
+returns logits. Verified on synthetic fixtures and the real 260K / 15M models
+(12 tests green).
+
+**Fixes landed in this phase:** GGUF weight layout is `[in, out]` with no
+transpose (`x @ W`); causal mask is `triu(..., k=1)` (0 on diagonal+lower,
+`-inf` strictly above); sequence is the leading axis in RoPE.
 
 ## Phase 3 — Generation
 

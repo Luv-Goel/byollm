@@ -18,7 +18,7 @@ engine can actually run forward through.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Dict
 
 from .gguf import GGUFModel
 
@@ -90,6 +90,24 @@ class Architecture:
         return "\n".join(lines)
 
 
+def _detect_vocab_size(meta: Dict[str, Any], model: GGUFModel) -> int:
+    """Best-effort vocab size from metadata; falls back to the embedding table.
+
+    llama.cpp stores ``token_embd.weight`` as ``[embedding_length, vocab_size]``,
+    so the second axis is vocab. Some converted files transpose it, so we prefer
+    explicit metadata when available.
+    """
+    if "llama.vocab_size" in meta:
+        return int(meta["llama.vocab_size"])
+    if "tokenizer.ggml.tokens" in meta:
+        return len(meta["tokenizer.ggml.tokens"])
+    if "token_embd.weight" in model.tensors:
+        shape = model.tensors["token_embd.weight"].shape
+        if len(shape) == 2:
+            return int(shape[1])
+    return 0
+
+
 def detect(model: GGUFModel) -> Architecture:
     """Read GGUF metadata and map tensor names to layer roles.
 
@@ -127,7 +145,7 @@ def detect(model: GGUFModel) -> Architecture:
         head_count=int(meta["llama.attention.head_count"]),
         head_count_kv=int(meta["llama.attention.head_count_kv"]),
         rms_epsilon=float(meta["llama.attention.layer_norm_rms_epsilon"]),
-        vocab_size=int(model.tensors["token_embd.weight"].shape[0]) if "token_embd.weight" in model.tensors else 0,
+        vocab_size=_detect_vocab_size(meta, model),
     )
 
     available = set(model.tensor_names())
